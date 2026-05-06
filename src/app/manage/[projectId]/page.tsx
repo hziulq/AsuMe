@@ -184,7 +184,7 @@ export default function ManageProjectPage() {
                       <td className="p-4 font-bold text-lg text-gray-800">
                         {q.word}
                         <div className="text-xs text-gray-400 font-normal mt-1">{q.phonetic} {q.partOfSpeech && `• ${q.partOfSpeech}`}</div>
-                        <div className="text-xs text-gray-500 font-normal mt-1 line-clamp-1">{q.paragraph}</div>
+                        <div className="text-xs text-gray-500 font-normal mt-1 line-clamp-1">{q.paragraph.replace(/_\[活用形:.*?\]/g, '_[活用形]')}</div>
                       </td>
                       <td className="p-4 text-gray-700">{q.japanese}</td>
                       <td className="p-4 text-center">
@@ -248,7 +248,7 @@ export default function ManageProjectPage() {
                 <input type="text" value={editingQuestion.partOfSpeech || ''} onChange={e => setEditingQuestion({ ...editingQuestion, partOfSpeech: e.target.value })} className="w-full border p-2 rounded-lg" />
               </div>
               <div>
-                <label className="block text-sm font-bold text-gray-600 mb-1">英文（穴埋め部分は _）</label>
+                <label className="block text-sm font-bold text-gray-600 mb-1">英文（穴埋めは_、活用形は_[活用形:xxx]）</label>
                 <textarea value={editingQuestion.paragraph} onChange={e => setEditingQuestion({ ...editingQuestion, paragraph: e.target.value })} className="w-full border p-2 rounded-lg h-24" />
               </div>
             </div>

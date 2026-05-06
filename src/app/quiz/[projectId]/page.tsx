@@ -8,6 +8,15 @@ import { QuizCard } from '@/components/QuizCard';
 import { generateQuizOptions, QuizChoice, shuffle } from '@/lib/quizEngine';
 import { playAudio } from '@/lib/audio';
 
+const getAudioText = (q: QuestionData) => {
+  if (!q.paragraph) return q.word;
+  let text = q.paragraph;
+  text = text.replace(/_\[活用形:(.*?)\]/g, '$1');
+  text = text.replace(/_\[活用形\]/g, q.word);
+  text = text.replace(/_/g, q.word);
+  return text;
+};
+
 export default function QuizPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -78,7 +87,7 @@ export default function QuizPage() {
       setCurrentChoices(choices);
       
       if (mode === 'en_to_ja' || mode === 'fill_in_the_blank') {
-        const textToRead = mode === 'en_to_ja' ? question.word : question.paragraph.replace('_', question.word);
+        const textToRead = mode === 'en_to_ja' ? question.word : getAudioText(question);
         playAudio(textToRead);
       }
     } else if (hasStarted && activeQuestions.length > 0 && currentIndex >= activeQuestions.length) {
@@ -132,7 +141,7 @@ export default function QuizPage() {
             <input type="text" value={editForm.partOfSpeech || ''} onChange={e => setEditForm({...editForm, partOfSpeech: e.target.value})} className="w-full border p-2 rounded-lg" placeholder="例: 名詞, 動詞(過去形)など" />
           </div>
           <div>
-            <label className="block text-sm font-bold text-gray-600 mb-1">英文（穴埋め部分を_に）</label>
+            <label className="block text-sm font-bold text-gray-600 mb-1">英文（穴埋めは_、活用形は_[活用形:xxx]）</label>
             <textarea value={editForm.paragraph} onChange={e => setEditForm({...editForm, paragraph: e.target.value})} className="w-full border p-2 rounded-lg h-24" />
           </div>
         </div>
@@ -364,7 +373,7 @@ export default function QuizPage() {
       <div className="w-full max-w-md flex justify-between mb-4">
         <button 
           onClick={() => {
-            const textToRead = mode === 'en_to_ja' ? currentQuestion.word : currentQuestion.paragraph.replace('_', currentQuestion.word);
+            const textToRead = mode === 'en_to_ja' ? currentQuestion.word : getAudioText(currentQuestion);
             playAudio(textToRead);
           }}
           className="bg-white border border-orange-200 rounded-full py-2 px-4 shadow-sm hover:bg-orange-50 text-orange-500 font-bold flex items-center gap-2 transition-transform hover:scale-105"

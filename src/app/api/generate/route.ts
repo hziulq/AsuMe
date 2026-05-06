@@ -154,8 +154,8 @@ Task:
 
             if (paragraph === rawExample) {
               // 2. 規則変化の活用形（複数形、過去形、進行形など）を許容する
-              regex = new RegExp(`\\b${cleanWord}(s|es|ed|d|ing|er|est|ly)?\\b`, 'gi');
-              paragraph = rawExample.replace(regex, '_[活用形]');
+              regex = new RegExp(`\\b(${cleanWord}(?:s|es|ed|d|ing|er|est|ly)?)\\b`, 'gi');
+              paragraph = rawExample.replace(regex, '_[活用形:$1]');
             }
 
             if (paragraph === rawExample && cleanWord.length >= 3) {
@@ -170,8 +170,8 @@ Task:
               );
 
               if (targetMatch) {
-                const fallbackRegex = new RegExp(`\\b${targetMatch}\\b`, 'gi');
-                paragraph = rawExample.replace(fallbackRegex, '_[活用形]');
+                const fallbackRegex = new RegExp(`\\b(${targetMatch})\\b`, 'gi');
+                paragraph = rawExample.replace(fallbackRegex, '_[活用形:$1]');
               }
             }
           } else {

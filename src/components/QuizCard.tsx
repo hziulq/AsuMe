@@ -47,7 +47,8 @@ export const QuizCard: React.FC<QuizCardProps> = ({ question, choices, mode, onA
           </div>
         );
       case 'fill_in_the_blank':
-        return <h2 className="text-2xl font-bold text-gray-800 text-center leading-relaxed">{question.paragraph}</h2>;
+        const displayParagraph = question.paragraph.replace(/_\[活用形:.*?\]/g, '_[活用形]');
+        return <h2 className="text-2xl font-bold text-gray-800 text-center leading-relaxed">{displayParagraph}</h2>;
     }
   };
 
