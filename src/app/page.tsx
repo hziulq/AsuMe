@@ -1,65 +1,149 @@
-import Image from "next/image";
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { getProjects, saveProject, deleteProject } from '@/lib/projectManager';
+import { parseCSV } from '@/lib/csvParser';
+import { exportProjectToZip, importProjectFromZip } from '@/lib/zipManager';
+import { Project } from '@/types';
+import Link from 'next/link';
 
 export default function Home() {
+  const [projects, setProjects] = useState<Project[]>([]);
+
+  useEffect(() => {
+    setProjects(getProjects());
+  }, []);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.name.endsWith('.zip')) {
+      try {
+        await importProjectFromZip(file);
+        setProjects(getProjects());
+        alert('ZIPからプロジェクトを復元しました！');
+      } catch (error) {
+        alert('ZIPの読み込みに失敗しました。');
+      }
+    } else if (file.name.endsWith('.csv')) {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        try {
+          const content = event.target?.result as string;
+          const questions = await parseCSV(content);
+          
+          const newProject: Project = {
+            id: `proj-${Date.now()}`,
+            name: file.name.replace('.csv', ''),
+            questions,
+            wrongQuestionIds: [],
+            createdAt: Date.now()
+          };
+          
+          saveProject(newProject);
+          setProjects(getProjects());
+        } catch (error: any) {
+          alert(`CSVの読み込みエラー: ${error.message || 'フォーマットを確認してください。'}`);
+        }
+      };
+      reader.readAsText(file);
+    } else {
+      alert('CSVまたはZIPファイルを選択してください。');
+    }
+    
+    e.target.value = '';
+  };
+
+  const handleExport = async (project: Project) => {
+    try {
+      await exportProjectToZip(project);
+    } catch (e) {
+      alert('エクスポートに失敗しました。');
+    }
+  };
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-orange-50 p-8">
+      <div className="max-w-3xl mx-auto">
+        <h1 className="text-4xl font-extrabold text-orange-600 mb-8 text-center drop-shadow-sm">
+          英単語アプリ AsuMe
+        </h1>
+        
+        <div className="bg-white rounded-3xl shadow-lg p-8 mb-8 text-center border border-orange-100 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-2 bg-orange-400"></div>
+          <h2 className="text-2xl font-bold text-gray-700 mb-6">学習プロジェクトを追加・復元</h2>
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4">
+            <label className="cursor-pointer bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 px-8 rounded-full inline-block transition-transform hover:-translate-y-1 hover:shadow-xl shadow-md w-full sm:w-auto">
+              ＋ CSV / ZIP をアップロード
+              <input type="file" accept=".csv,.zip" className="hidden" onChange={handleFileUpload} />
+            </label>
+            <Link href="/generator" className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full inline-block transition-transform hover:-translate-y-1 hover:shadow-xl shadow-md w-full sm:w-auto">
+              ✨ 英単語から自動生成
+            </Link>
+          </div>
+          <p className="text-gray-400 text-sm mt-4">.csvファイルから新規作成、またはAPIを利用して単語データを作成できます。</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-gray-800 ml-2">プロジェクト一覧</h2>
+          {projects.length === 0 ? (
+            <p className="text-gray-500 ml-2">プロジェクトがありません。</p>
+          ) : (
+            projects.map(project => {
+              const studiedWords = project.questions.filter(q => q.correctCount || q.incorrectCount).length;
+              const totalAnswers = project.questions.reduce((sum, q) => sum + (q.correctCount || 0) + (q.incorrectCount || 0), 0);
+              const totalCorrect = project.questions.reduce((sum, q) => sum + (q.correctCount || 0), 0);
+              const accuracy = totalAnswers > 0 ? Math.round((totalCorrect / totalAnswers) * 100) : 0;
+              const cycles = project.questions.length > 0 
+                ? Math.min(...project.questions.map(q => (q.correctCount || 0) + (q.incorrectCount || 0))) 
+                : 0;
+              const masteredWords = project.questions.filter(q => q.isMastered).length;
+
+              return (
+              <div key={project.id} className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md transition-shadow">
+                <div className="w-full sm:w-1/2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="text-xl font-bold text-gray-800">{project.name}</h3>
+                    {cycles > 0 && <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-md text-xs font-bold">{cycles}周クリア</span>}
+                  </div>
+                  
+                  <div className="flex flex-wrap text-sm text-gray-500 gap-x-4 gap-y-1 mb-3 font-medium">
+                    <span>全 {project.questions.length} 問</span>
+                    <span>殿堂入り: {masteredWords} 問</span>
+                    <span>正答率: {accuracy}%</span>
+                  </div>
+                  
+                  <div className="w-full bg-gray-100 rounded-full h-2">
+                    <div className="bg-green-500 h-2 rounded-full" style={{ width: `${(studiedWords / project.questions.length) * 100}%` }}></div>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">学習進捗: {studiedWords} / {project.questions.length}</p>
+                </div>
+
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+                  {project.wrongQuestionIds && project.wrongQuestionIds.length > 0 && (
+                    <Link href={`/quiz/${project.id}?review=true`} className="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-2 px-5 rounded-xl shadow-sm transition-transform hover:scale-105 flex items-center justify-center">
+                      復習 ({project.wrongQuestionIds.length}問)
+                    </Link>
+                  )}
+                  <Link href={`/quiz/${project.id}`} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-5 rounded-xl shadow-sm transition-transform hover:scale-105 flex items-center justify-center">
+                    学習開始
+                  </Link>
+                  <Link href={`/manage/${project.id}`} className="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-4 rounded-xl transition-colors">
+                    管理⚙️
+                  </Link>
+                  <button onClick={() => handleExport(project)} className="bg-blue-50 hover:bg-blue-100 text-blue-500 font-bold py-2 px-4 rounded-xl transition-colors">
+                    ZIP
+                  </button>
+                  <button onClick={() => { if(confirm('削除しますか？')) { deleteProject(project.id); setProjects(getProjects()); } }} className="bg-red-50 hover:bg-red-100 text-red-500 font-bold py-2 px-4 rounded-xl transition-colors">
+                    削除
+                  </button>
+                </div>
+              </div>
+            )})
+          )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

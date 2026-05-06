@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🚀 AsuMe (英単語学習アプリ)
 
-## Getting Started
+「AsuMe」は、ポップで直感的なUIを持つブラウザ完結型の英単語学習アプリケーションです。
 
-First, run the development server:
+バックエンドのデータベースを一切持たず、すべての学習データと進捗はブラウザの `localStorage` に安全に保存されます。自分で作った単語帳（CSVファイル）を取り込んだり、APIを活用して英単語から自動で問題を生成して、自分だけの単語帳で効率よく学習することができます。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## ✨ 主な機能
+
+* **ブラウザ完結（DB不要）**: サーバーやデータベースの構築は一切不要。すぐに使い始められます。
+* **スマートな出題アルゴリズム**: 単純なランダムではなく、「まだ解いていない単語」「正答率が低い苦手な単語」「最後に学習してから時間が経っている単語」を優先して出題します。
+* **殿堂入り（マスター）システム**: 同じ単語に3回連続で正解すると「殿堂入り👑」となり、通常の出題から自動的に除外されるため、覚えていない単語に集中できます。
+* **単語の自動生成 (API連携)**: 「英単語」を入力するだけで、以下のデータを自動で取得・生成します。
+  * 英語の定義・品詞・発音記号（WordsAPI / cmu-dict）
+  * 高精度な日本語訳（DeepL API）
+  * 文脈に沿った短い例文と、自然な穴埋め問題化（WordsAPI / OpenAI gpt-4o-mini）
+* **プロジェクト管理画面**: 各単語の正答率、連続正解数、殿堂入りステータスの確認、個別編集、手動追加が一つのダッシュボードで完結します。
+* **データのエクスポート/インポート**: 学習進捗（正解数など）を含めたプロジェクト全体をZIPファイルとして出力・復元できます。
+* **音声読み上げ機能**: Web Speech APIを利用し、問題出題時にネイティブな英語音声を自動再生します。
+
+## 🚀 技術スタック
+
+* **フレームワーク**: Next.js (App Router / クライアントコンポーネント中心)
+* **スタイリング**: Tailwind CSS v4
+* **主要ライブラリ**: 
+  * `papaparse` (CSV解析)
+  * `jszip` (ZIPファイルの圧縮・展開)
+  * `cmu-pronouncing-dictionary` (発音記号フォールバック)
+* **利用API**: RapidAPI (WordsAPI), DeepL API, OpenAI API
+
+## 🛠️ セットアップと実行方法
+
+1. **パッケージのインストール**
+   ```bash
+   npm install
+   ```
+
+2. **環境変数の設定**
+   `.env.example` をコピーして `.env.local` を作成し、自動生成機能で使用するAPIキーを設定してください。（自動生成機能を使用しない場合は設定不要でアプリ自体は動作します）
+   ```env
+   WORDS_API_KEY="your_wordsapi_key"
+   DEEPL_API_KEY="your_deepl_api_key"
+   OPENAI_API_KEY="your_openai_api_key"
+   ```
+
+3. **開発サーバーの起動**
+   ```bash
+   npm run dev
+   ```
+   ブラウザで [http://localhost:3000](http://localhost:3000) にアクセスするとアプリが起動します。
+
+## 📁 手動アップロード用のCSVフォーマット
+
+手動で単語帳を作成してインポートする場合は、以下のヘッダー（1行目）を含むCSVファイルを用意してください。
+
+```csv
+words,japanese,paragraphs,phonetic,partOfSpeech
+apple,りんご,I ate an _.,ˈæpl,noun
+attempt,試みる,The police _[活用形] to stop the thief.,əˈtempt,verb
 ```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+* `words`: 英単語（必須）
+* `japanese`: 日本語訳（必須）
+* `paragraphs`: 穴埋め用の例文（空欄箇所は `_` や `_[活用形]` にする）
+* `phonetic`: 発音記号（任意）
+* `partOfSpeech`: 品詞（任意）
