@@ -25,7 +25,6 @@ The level of _.,ambiguity,曖昧さ,æmbɪˈgjuːəti
 
   it('rejects on invalid CSV format (e.g. empty content)', async () => {
     const csvContent = ``;
-    const result = await parseCSV(csvContent);
-    expect(result).toHaveLength(0); // skipEmptyLines: true の場合は0件を返す
+    await expect(parseCSV(csvContent)).rejects.toThrow('有効な単語データが見つかりませんでした');
   });
 });

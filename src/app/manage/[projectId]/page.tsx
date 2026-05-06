@@ -16,6 +16,8 @@ export default function ManageProjectPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<QuestionData | null>(null);
   const [isEnriching, setIsEnriching] = useState(false);
+  const [isBatchEnriching, setIsBatchEnriching] = useState(false);
+  const [batchProgress, setBatchProgress] = useState(0);
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editNameValue, setEditNameValue] = useState('');
@@ -141,6 +143,62 @@ export default function ManageProjectPage() {
     }
   };
 
+  const missingDataQuestions = project.questions.filter(q => !q.japanese || !q.paragraph || !q.phonetic);
+
+  const handleBatchEnrich = async () => {
+    if (missingDataQuestions.length === 0) return;
+    if (!confirm(`${missingDataQuestions.length}件の単語の不足データを一括補完しますか？（少し時間がかかります）`)) return;
+
+    setIsBatchEnriching(true);
+    setBatchProgress(0);
+
+    const updatedQuestions = [...project.questions];
+
+    try {
+      for (let i = 0; i < missingDataQuestions.length; i++) {
+        const q = missingDataQuestions[i];
+        const index = updatedQuestions.findIndex(uq => uq.id === q.id);
+        if (index === -1) continue;
+
+        if (!q.japanese) {
+          const res = await fetch('/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ words: [q.word] })
+          });
+          const data = await res.json();
+          if (res.ok && data.results && data.results.length > 0) {
+            updatedQuestions[index] = { ...updatedQuestions[index], ...data.results[0] };
+          }
+        } else {
+          const res = await fetch('/api/enrich', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ word: q.word, japanese: q.japanese, partOfSpeech: q.partOfSpeech })
+          });
+          const data = await res.json();
+          if (res.ok) {
+            updatedQuestions[index] = { 
+              ...updatedQuestions[index], 
+              phonetic: data.phonetic || updatedQuestions[index].phonetic, 
+              paragraph: data.paragraph || updatedQuestions[index].paragraph 
+            };
+          }
+        }
+
+        setBatchProgress(Math.round(((i + 1) / missingDataQuestions.length) * 100));
+        saveProject({ ...project, questions: updatedQuestions });
+      }
+      setProject({ ...project, questions: updatedQuestions });
+      alert('一括補完が完了しました！');
+    } catch {
+      alert('通信中にエラーが発生しました。処理を中断します。');
+    } finally {
+      setIsBatchEnriching(false);
+      setBatchProgress(0);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-orange-50 p-8">
       <div className="max-w-5xl mx-auto">
@@ -222,6 +280,25 @@ export default function ManageProjectPage() {
             </button>
           </div>
         </div>
+
+        {missingDataQuestions.length > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+            <div>
+              <h3 className="font-bold text-blue-800 text-lg mb-1">不足データの補完</h3>
+              <p className="text-blue-600 text-sm">
+                日本語訳や例文が不足している単語が <strong>{missingDataQuestions.length}件</strong> あります。<br/>
+                APIを使用して不足しているデータを一括で自動生成できます。
+              </p>
+            </div>
+            <button 
+              onClick={handleBatchEnrich}
+              disabled={isBatchEnriching}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-transform hover:-translate-y-1 whitespace-nowrap disabled:opacity-50 disabled:transform-none flex items-center gap-2 w-full sm:w-auto justify-center"
+            >
+              {isBatchEnriching ? <span className="animate-pulse">⏳ 生成中 ({batchProgress}%)</span> : '✨ 一括補完を実行する'}
+            </button>
+          </div>
+        )}
 
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-orange-100">
           <div className="overflow-x-auto">

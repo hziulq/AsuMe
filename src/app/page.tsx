@@ -3,12 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { getProjects, saveProject, deleteProject } from '@/lib/projectManager';
 import { parseCSV } from '@/lib/csvParser';
+import { exportProjectToCSV } from '@/lib/csvExporter';
 import { exportProjectToZip, importProjectFromZip } from '@/lib/zipManager';
 import { Project } from '@/types';
 import Link from 'next/link';
 
 export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [exportingProject, setExportingProject] = useState<Project | null>(null);
 
   useEffect(() => {
     Promise.resolve().then(() => {
@@ -43,8 +45,16 @@ export default function Home() {
             createdAt: Date.now()
           };
 
+          const missingJapaneseCount = questions.filter(q => !q.japanese).length;
+
           saveProject(newProject);
           setProjects(getProjects());
+
+          if (missingJapaneseCount > 0) {
+            alert(`読み込みが完了しました。\n\n※ ${missingJapaneseCount}件の単語に日本語訳が設定されていません。\n管理画面の「不足データを一括補完」から自動生成を実行してください。`);
+          } else {
+            alert('CSVからプロジェクトを作成しました！');
+          }
         } catch (error: unknown) {
           const errMsg = error instanceof Error ? error.message : 'フォーマットを確認してください。';
           alert(`CSVの読み込みエラー: ${errMsg}`);
@@ -58,7 +68,7 @@ export default function Home() {
     e.target.value = '';
   };
 
-  const handleExport = async (project: Project) => {
+  const handleExportZip = async (project: Project) => {
     try {
       await exportProjectToZip(project);
     } catch {
@@ -135,8 +145,8 @@ export default function Home() {
                     <Link href={`/manage/${project.id}`} className="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-4 rounded-xl transition-colors">
                       管理⚙️
                     </Link>
-                    <button onClick={() => handleExport(project)} className="bg-blue-50 hover:bg-blue-100 text-blue-500 font-bold py-2 px-4 rounded-xl transition-colors">
-                      ZIP
+                    <button onClick={() => setExportingProject(project)} className="bg-blue-50 hover:bg-blue-100 text-blue-500 font-bold py-2 px-4 rounded-xl transition-colors">
+                      エクスポート
                     </button>
                     <button onClick={() => { if (confirm('削除しますか？')) { deleteProject(project.id); setProjects(getProjects()); } }} className="bg-red-50 hover:bg-red-100 text-red-500 font-bold py-2 px-4 rounded-xl transition-colors">
                       削除
@@ -148,6 +158,46 @@ export default function Home() {
           )}
         </div>
       </div>
+
+      {exportingProject && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">エクスポート形式の選択</h2>
+            <p className="text-sm text-gray-600 mb-6">{exportingProject.name} を出力します。</p>
+            
+            <div className="space-y-3">
+              <button 
+                onClick={() => {
+                  handleExportZip(exportingProject);
+                  setExportingProject(null);
+                }}
+                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl flex flex-col items-center transition-colors shadow-sm"
+              >
+                <span className="text-lg">プロジェクトデータ (ZIP)</span>
+                <span className="text-xs font-normal opacity-90 mt-1">学習履歴や成績を含む完全なバックアップ</span>
+              </button>
+              
+              <button 
+                onClick={() => {
+                  exportProjectToCSV(exportingProject);
+                  setExportingProject(null);
+                }}
+                className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-xl flex flex-col items-center transition-colors shadow-sm"
+              >
+                <span className="text-lg">単語帳データ (CSV)</span>
+                <span className="text-xs font-normal opacity-90 mt-1">Excel等で編集できる単語リストのみ</span>
+              </button>
+            </div>
+            
+            <button 
+              onClick={() => setExportingProject(null)} 
+              className="w-full mt-6 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 rounded-xl transition-colors"
+            >
+              キャンセル
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
