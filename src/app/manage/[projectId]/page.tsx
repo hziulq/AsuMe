@@ -15,6 +15,7 @@ export default function ManageProjectPage() {
   const [newWord, setNewWord] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<QuestionData | null>(null);
+  const [isEnriching, setIsEnriching] = useState(false);
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editNameValue, setEditNameValue] = useState('');
@@ -84,9 +85,59 @@ export default function ManageProjectPage() {
 
   const handleEditSave = () => {
     if (editingQuestion) {
-      const updatedQuestions = project.questions.map(q => q.id === editingQuestion.id ? editingQuestion : q);
+      let updatedQuestions;
+      const exists = project.questions.find(q => q.id === editingQuestion.id);
+      if (exists) {
+        updatedQuestions = project.questions.map(q => q.id === editingQuestion.id ? editingQuestion : q);
+      } else {
+        updatedQuestions = [editingQuestion, ...project.questions];
+      }
       handleUpdate({ ...project, questions: updatedQuestions });
       setEditingQuestion(null);
+    }
+  };
+
+  const handleManualAdd = () => {
+    setEditingQuestion({
+      id: `q-manual-${Date.now()}`,
+      word: newWord.trim(),
+      japanese: '',
+      phonetic: '',
+      partOfSpeech: '',
+      paragraph: ''
+    });
+    setNewWord('');
+  };
+
+  const handleEnrich = async () => {
+    if (!editingQuestion || !editingQuestion.word) return;
+    setIsEnriching(true);
+    try {
+      const res = await fetch('/api/enrich', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          word: editingQuestion.word,
+          japanese: editingQuestion.japanese,
+          partOfSpeech: editingQuestion.partOfSpeech
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '自動生成に失敗しました');
+
+      setEditingQuestion({
+        ...editingQuestion,
+        phonetic: data.phonetic || editingQuestion.phonetic,
+        paragraph: data.paragraph || editingQuestion.paragraph
+      });
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        alert(e.message);
+      } else {
+        alert('エラーが発生しました');
+      }
+    } finally {
+      setIsEnriching(false);
     }
   };
 
@@ -155,13 +206,21 @@ export default function ManageProjectPage() {
               onKeyDown={e => e.key === 'Enter' && generateAndAddWord()}
             />
           </div>
-          <button
-            onClick={generateAndAddWord}
-            disabled={isGenerating || !newWord.trim()}
-            className="w-full sm:w-auto mt-4 sm:mt-5 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow-md disabled:opacity-50 whitespace-nowrap transition-transform hover:-translate-y-1"
-          >
-            {isGenerating ? '生成中...' : '自動生成して追加 ✨'}
-          </button>
+          <div className="w-full sm:w-auto mt-4 sm:mt-5 flex flex-col sm:flex-row gap-2">
+            <button
+              onClick={handleManualAdd}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-6 rounded-xl shadow-sm whitespace-nowrap transition-transform hover:-translate-y-1"
+            >
+              手動で追加 ✏️
+            </button>
+            <button
+              onClick={generateAndAddWord}
+              disabled={isGenerating || !newWord.trim()}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow-md disabled:opacity-50 whitespace-nowrap transition-transform hover:-translate-y-1"
+            >
+              {isGenerating ? '生成中...' : '自動生成して追加 ✨'}
+            </button>
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-orange-100">
@@ -258,6 +317,15 @@ export default function ManageProjectPage() {
                 <textarea value={editingQuestion.paragraph} onChange={e => setEditingQuestion({ ...editingQuestion, paragraph: e.target.value })} className="w-full border p-2 rounded-lg h-24" />
               </div>
             </div>
+            
+            <button 
+              onClick={handleEnrich}
+              disabled={isEnriching || !editingQuestion.word}
+              className="w-full mt-4 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 font-bold py-2 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isEnriching ? '生成中...' : '✨ 英単語・意味・品詞から例文と発音を自動生成'}
+            </button>
+
             <div className="mt-6 flex gap-3">
               <button onClick={() => setEditingQuestion(null)} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 rounded-xl transition-colors">キャンセル</button>
               <button onClick={handleEditSave} className="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl shadow-md transition-colors">保存する</button>

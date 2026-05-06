@@ -102,10 +102,43 @@ export default function QuizPage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<QuestionData | null>(null);
+  const [isEnriching, setIsEnriching] = useState(false);
 
   const startEdit = (q: QuestionData) => {
     setEditForm({ ...q });
     setIsEditing(true);
+  };
+
+  const handleEnrich = async () => {
+    if (!editForm || !editForm.word) return;
+    setIsEnriching(true);
+    try {
+      const res = await fetch('/api/enrich', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          word: editForm.word,
+          japanese: editForm.japanese,
+          partOfSpeech: editForm.partOfSpeech
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || '自動生成に失敗しました');
+
+      setEditForm({
+        ...editForm,
+        phonetic: data.phonetic || editForm.phonetic,
+        paragraph: data.paragraph || editForm.paragraph
+      });
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        alert(e.message);
+      } else {
+        alert('エラーが発生しました');
+      }
+    } finally {
+      setIsEnriching(false);
+    }
   };
 
   const handleEditSave = () => {
@@ -148,7 +181,16 @@ export default function QuizPage() {
             <textarea value={editForm.paragraph} onChange={e => setEditForm({...editForm, paragraph: e.target.value})} className="w-full border p-2 rounded-lg h-24" />
           </div>
         </div>
-        <div className="mt-6 flex gap-3">
+          
+          <button 
+            onClick={handleEnrich}
+            disabled={isEnriching || !editForm.word}
+            className="w-full mt-4 bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-200 font-bold py-2 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {isEnriching ? '生成中...' : '✨ 英単語・意味・品詞から例文と発音を自動生成'}
+          </button>
+
+          <div className="mt-6 flex gap-3">
           <button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 rounded-xl">キャンセル</button>
           <button onClick={handleEditSave} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl shadow-md">保存して再開</button>
         </div>
