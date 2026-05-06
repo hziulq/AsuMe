@@ -1,4 +1,4 @@
-import { generateQuizOptions, shuffle } from './quizEngine';
+import { generateQuizOptions } from './quizEngine';
 import { QuestionData } from '@/types';
 
 describe('Quiz Engine', () => {

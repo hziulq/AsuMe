@@ -21,9 +21,11 @@ export default function ManageProjectPage() {
 
   useEffect(() => {
     if (projectId) {
-      const p = getProject(projectId);
-      if (p) setProject(p);
-      else router.push('/');
+      Promise.resolve().then(() => {
+        const p = getProject(projectId);
+        if (p) setProject(p);
+        else router.push('/');
+      });
     }
   }, [projectId, router]);
 
@@ -69,8 +71,12 @@ export default function ManageProjectPage() {
         setNewWord('');
         alert(`「${generated.word}」を追加しました！`);
       }
-    } catch (e: any) {
-      alert(e.message);
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        alert(e.message);
+      } else {
+        alert('エラーが発生しました');
+      }
     } finally {
       setIsGenerating(false);
     }

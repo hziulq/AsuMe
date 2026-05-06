@@ -11,7 +11,9 @@ export default function Home() {
   const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
-    setProjects(getProjects());
+    Promise.resolve().then(() => {
+      setProjects(getProjects());
+    });
   }, []);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -23,7 +25,7 @@ export default function Home() {
         await importProjectFromZip(file);
         setProjects(getProjects());
         alert('ZIPからプロジェクトを復元しました！');
-      } catch (error) {
+      } catch {
         alert('ZIPの読み込みに失敗しました。');
       }
     } else if (file.name.endsWith('.csv')) {
@@ -43,8 +45,9 @@ export default function Home() {
 
           saveProject(newProject);
           setProjects(getProjects());
-        } catch (error: any) {
-          alert(`CSVの読み込みエラー: ${error.message || 'フォーマットを確認してください。'}`);
+        } catch (error: unknown) {
+          const errMsg = error instanceof Error ? error.message : 'フォーマットを確認してください。';
+          alert(`CSVの読み込みエラー: ${errMsg}`);
         }
       };
       reader.readAsText(file);
@@ -58,7 +61,7 @@ export default function Home() {
   const handleExport = async (project: Project) => {
     try {
       await exportProjectToZip(project);
-    } catch (e) {
+    } catch {
       alert('エクスポートに失敗しました。');
     }
   };

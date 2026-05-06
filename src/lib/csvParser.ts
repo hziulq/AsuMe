@@ -8,12 +8,12 @@ export const parseCSV = (csvContent: string): Promise<QuestionData[]> => {
       skipEmptyLines: true,
       complete: (results) => {
         try {
-          const questions: QuestionData[] = results.data
-            .filter((row: any) => {
+          const questions: QuestionData[] = (results.data as Record<string, string>[])
+            .filter((row) => {
               const w = row.words || row.word || '';
               return w.trim() !== '';
             })
-            .map((row: any, index: number) => ({
+            .map((row, index: number) => ({
               id: `q-${Date.now()}-${index}`,
               paragraph: row.paragraphs || row.paragraph || '',
               word: (row.words || row.word).trim(),
@@ -21,17 +21,17 @@ export const parseCSV = (csvContent: string): Promise<QuestionData[]> => {
               phonetic: row.phonetic || '',
               partOfSpeech: row.partOfSpeech || row.part_of_speech || row.grammar || '',
             }));
-            
+
           if (questions.length === 0) {
             throw new Error('有効な単語データが見つかりませんでした。CSVに「words」列が含まれているか確認してください。');
           }
-          
+
           resolve(questions);
         } catch (error) {
           reject(error);
         }
       },
-      error: (error: any) => {
+      error: (error: Error | Papa.ParseError) => {
         reject(error);
       }
     });

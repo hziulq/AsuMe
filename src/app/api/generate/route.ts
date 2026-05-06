@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-// @ts-ignore
+// @ts-expect-error cmu-pronouncing-dictionary has no types
 import { dictionary as cmudict } from 'cmu-pronouncing-dictionary';
 
 export async function POST(request: Request) {
@@ -24,7 +24,8 @@ export async function POST(request: Request) {
       const cleanWord = word.trim().toLowerCase();
       if (!cleanWord) continue;
 
-      let phonetic = cmudict[cleanWord] || '';
+      let phonetic = '';
+      let pronunciationObj: Record<string, string> | null = null;
       let paragraph = '';
       let japanese = '';
       let partOfSpeech = '';
@@ -46,21 +47,19 @@ export async function POST(request: Request) {
           // WordsAPIのすべての意味リストを文字列化してOpenAIに渡す準備
           let definitionsList = '';
           if (resultsArray.length > 0) {
-            definitionsList = resultsArray.slice(0, 10).map((res: any, index: number) =>
+            definitionsList = resultsArray.slice(0, 10).map((res: Record<string, string>, index: number) =>
               `${index + 1}. partOfSpeech: ${res.partOfSpeech || 'unknown'}, definition: "${res.definition || ''}"`
             ).join('\n');
           }
 
-          // 発音記号の取得
-          let apiPhonetic = '';
+          // 発音記号の取得 (品詞確定後にマッチングするためオブジェクトとして保持)
           if (data.pronunciation) {
             if (typeof data.pronunciation === 'string') {
-              apiPhonetic = data.pronunciation;
-            } else if (data.pronunciation.all) {
-              apiPhonetic = data.pronunciation.all;
+              pronunciationObj = { all: data.pronunciation };
+            } else {
+              pronunciationObj = data.pronunciation;
             }
           }
-          phonetic = apiPhonetic || cmudict[cleanWord] || '';
 
           // 2. OpenAIによるTOEIC特化の意味選定・翻訳・例文の同時生成
           let rawExample = '';
@@ -114,7 +113,7 @@ Task:
 
           // 3. OpenAIが失敗/未設定の場合のフォールバック
           if (!usedOpenAI) {
-            let bestResult = resultsArray[0];
+            const bestResult = resultsArray[0];
             if (bestResult) {
               partOfSpeech = bestResult.partOfSpeech || '';
               if (bestResult.examples && bestResult.examples.length > 0) {
@@ -183,6 +182,20 @@ Task:
         }
       } catch (error) {
         console.error('WordsAPI failed', error);
+      }
+
+      // 品詞に基づいて最適な発音記号を最終決定
+      if (pronunciationObj) {
+        if (partOfSpeech && pronunciationObj[partOfSpeech]) {
+          phonetic = pronunciationObj[partOfSpeech];
+        } else if (pronunciationObj.all) {
+          phonetic = pronunciationObj.all;
+        } else {
+          phonetic = Object.values(pronunciationObj).find(v => typeof v === 'string') as string || '';
+        }
+      }
+      if (!phonetic) {
+        phonetic = cmudict[cleanWord] || '';
       }
 
       // ARPAbetの場合、小文字にして見栄えを整える

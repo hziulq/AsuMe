@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { getProject, saveProject } from '@/lib/projectManager';
 import { Project, QuestionType, QuestionData } from '@/types';
 import { QuizCard } from '@/components/QuizCard';
-import { generateQuizOptions, QuizChoice, shuffle } from '@/lib/quizEngine';
+import { generateQuizOptions, shuffle } from '@/lib/quizEngine';
 import { playAudio } from '@/lib/audio';
 
 const getAudioText = (q: QuestionData) => {
@@ -39,11 +39,10 @@ export default function QuizPage() {
   const [mode, setMode] = useState<QuestionType>('en_to_ja');
   
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentChoices, setCurrentChoices] = useState<QuizChoice[]>([]);
-  const [isFinished, setIsFinished] = useState(false);
 
   useEffect(() => {
-    if (projectId) {
+    if (!projectId) return;
+    Promise.resolve().then(() => {
       const p = getProject(projectId);
       if (p) {
         setProject(p);
@@ -75,25 +74,31 @@ export default function QuizPage() {
           }
         }
         setActiveQuestions(selectedQuestions);
+      } else {
+        router.push('/');
       }
-      else router.push('/');
-    }
+    });
   }, [projectId, router, isReviewMode, refreshKey]);
 
+  const currentQuestion = activeQuestions[currentIndex];
+  const isFinished = hasStarted && activeQuestions.length > 0 && currentIndex >= activeQuestions.length;
+
+  const currentChoices = useMemo(() => {
+    if (hasStarted && currentQuestion && project) {
+      return generateQuizOptions(currentQuestion, project.questions, mode, 4);
+    }
+    return [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasStarted, currentQuestion, mode]);
+
   useEffect(() => {
-    if (hasStarted && activeQuestions.length > 0 && currentIndex < activeQuestions.length) {
-      const question = activeQuestions[currentIndex];
-      const choices = generateQuizOptions(question, project!.questions, mode, 4);
-      setCurrentChoices(choices);
-      
+    if (hasStarted && currentQuestion && !isFinished) {
       if (mode === 'en_to_ja' || mode === 'fill_in_the_blank') {
-        const textToRead = mode === 'en_to_ja' ? question.word : getAudioText(question);
+        const textToRead = mode === 'en_to_ja' ? currentQuestion.word : getAudioText(currentQuestion);
         playAudio(textToRead);
       }
-    } else if (hasStarted && activeQuestions.length > 0 && currentIndex >= activeQuestions.length) {
-      setIsFinished(true);
     }
-  }, [hasStarted, activeQuestions, currentIndex, mode, project]);
+  }, [hasStarted, currentQuestion, mode, isFinished]);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<QuestionData | null>(null);
@@ -106,14 +111,12 @@ export default function QuizPage() {
   const handleEditSave = () => {
     if (project && editForm) {
       const updatedQuestions = project.questions.map(q => q.id === editForm.id ? editForm : q);
-      project.questions = updatedQuestions;
-      saveProject(project);
+      const updatedProject = { ...project, questions: updatedQuestions };
+      saveProject(updatedProject);
+      setProject(updatedProject);
       
       const updatedActive = activeQuestions.map(q => q.id === editForm.id ? editForm : q);
       setActiveQuestions(updatedActive);
-      
-      const newChoices = generateQuizOptions(editForm, updatedQuestions, mode, 4);
-      setCurrentChoices(newChoices);
       
       setIsEditing(false);
     }
@@ -239,7 +242,6 @@ export default function QuizPage() {
     const handleNext10 = () => {
       setFirstAttemptResults({});
       setCurrentIndex(0);
-      setIsFinished(false);
       setRefreshKey(k => k + 1);
     };
     
@@ -312,10 +314,7 @@ export default function QuizPage() {
     );
   }
 
-  if (currentChoices.length === 0) return null;
-
-  const currentQuestion = activeQuestions[currentIndex];
-  if (!currentQuestion) return null;
+  if (currentChoices.length === 0 || !currentQuestion) return null;
 
   const handleAnswer = (isCorrect: boolean) => {
     const qId = currentQuestion.id;
@@ -324,9 +323,12 @@ export default function QuizPage() {
     if (firstAttemptResults[qId] === undefined) {
       setFirstAttemptResults(prev => ({ ...prev, [qId]: isCorrect }));
       
-      const qIndex = project.questions.findIndex(q => q.id === qId);
+      const updatedProject = { ...project };
+      const updatedQuestions = [...updatedProject.questions];
+      const qIndex = updatedQuestions.findIndex(q => q.id === qId);
+      
       if (qIndex !== -1) {
-        const q = project.questions[qIndex];
+        const q = { ...updatedQuestions[qIndex] };
         q.correctCount = (q.correctCount || 0) + (isCorrect ? 1 : 0);
         q.incorrectCount = (q.incorrectCount || 0) + (isCorrect ? 0 : 1);
         q.consecutiveCorrectCount = isCorrect ? (q.consecutiveCorrectCount || 0) + 1 : 0;
@@ -337,17 +339,20 @@ export default function QuizPage() {
           q.isMastered = false;
         }
         q.lastStudiedAt = Date.now();
+        updatedQuestions[qIndex] = q;
       }
       
-      project.lastStudiedAt = Date.now();
+      updatedProject.questions = updatedQuestions;
+      updatedProject.lastStudiedAt = Date.now();
       
       // localStorageのwrongQuestionIdsを更新 (初回のみ評価)
       if (isCorrect) {
-        project.wrongQuestionIds = (project.wrongQuestionIds || []).filter(id => id !== qId);
+        updatedProject.wrongQuestionIds = (updatedProject.wrongQuestionIds || []).filter(id => id !== qId);
       } else {
-        project.wrongQuestionIds = Array.from(new Set([...(project.wrongQuestionIds || []), qId]));
+        updatedProject.wrongQuestionIds = Array.from(new Set([...(updatedProject.wrongQuestionIds || []), qId]));
       }
-      saveProject(project);
+      saveProject(updatedProject);
+      setProject(updatedProject);
     }
 
     if (isCorrect) {

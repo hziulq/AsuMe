@@ -48,8 +48,12 @@ export default function GeneratorPage() {
         setProgress(Math.round(((i + 1) / words.length) * 100));
         setPreviewData([...newPreviewData]);
       }
-    } catch (e: any) {
-      setError(e.message || '通信エラーが発生しました');
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        setError(e.message || '通信エラーが発生しました');
+      } else {
+        setError('通信エラーが発生しました');
+      }
     } finally {
       setIsLoading(false);
     }
