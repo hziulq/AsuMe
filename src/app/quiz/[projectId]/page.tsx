@@ -20,6 +20,9 @@ export default function QuizPage() {
   // 10問のキュー。間違えた問題はここに追加される。
   const [activeQuestions, setActiveQuestions] = useState<QuestionData[]>([]);
   
+  // 連続出題用の更新キー
+  const [refreshKey, setRefreshKey] = useState(0);
+  
   // 1回目（初回）の解答結果を記録する（id -> isCorrect）
   const [firstAttemptResults, setFirstAttemptResults] = useState<Record<string, boolean>>({});
   
@@ -66,7 +69,7 @@ export default function QuizPage() {
       }
       else router.push('/');
     }
-  }, [projectId, router, isReviewMode]);
+  }, [projectId, router, isReviewMode, refreshKey]);
 
   useEffect(() => {
     if (hasStarted && activeQuestions.length > 0 && currentIndex < activeQuestions.length) {
@@ -85,6 +88,61 @@ export default function QuizPage() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<QuestionData | null>(null);
+
+  const startEdit = (q: QuestionData) => {
+    setEditForm({ ...q });
+    setIsEditing(true);
+  };
+
+  const handleEditSave = () => {
+    if (project && editForm) {
+      const updatedQuestions = project.questions.map(q => q.id === editForm.id ? editForm : q);
+      project.questions = updatedQuestions;
+      saveProject(project);
+      
+      const updatedActive = activeQuestions.map(q => q.id === editForm.id ? editForm : q);
+      setActiveQuestions(updatedActive);
+      
+      const newChoices = generateQuizOptions(editForm, updatedQuestions, mode, 4);
+      setCurrentChoices(newChoices);
+      
+      setIsEditing(false);
+    }
+  };
+
+  const editModal = isEditing && editForm && (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
+        <h2 className="text-xl font-bold text-gray-800 mb-4">問題データの修正</h2>
+        <div className="space-y-3">
+          <div>
+            <label className="block text-sm font-bold text-gray-600 mb-1">英単語</label>
+            <input type="text" value={editForm.word} onChange={e => setEditForm({...editForm, word: e.target.value})} className="w-full border p-2 rounded-lg" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-600 mb-1">日本語訳</label>
+            <input type="text" value={editForm.japanese} onChange={e => setEditForm({...editForm, japanese: e.target.value})} className="w-full border p-2 rounded-lg" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-600 mb-1">発音記号</label>
+            <input type="text" value={editForm.phonetic} onChange={e => setEditForm({...editForm, phonetic: e.target.value})} className="w-full border p-2 rounded-lg" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-600 mb-1">品詞・変形情報</label>
+            <input type="text" value={editForm.partOfSpeech || ''} onChange={e => setEditForm({...editForm, partOfSpeech: e.target.value})} className="w-full border p-2 rounded-lg" placeholder="例: 名詞, 動詞(過去形)など" />
+          </div>
+          <div>
+            <label className="block text-sm font-bold text-gray-600 mb-1">英文（穴埋め部分を_に）</label>
+            <textarea value={editForm.paragraph} onChange={e => setEditForm({...editForm, paragraph: e.target.value})} className="w-full border p-2 rounded-lg h-24" />
+          </div>
+        </div>
+        <div className="mt-6 flex gap-3">
+          <button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 rounded-xl">キャンセル</button>
+          <button onClick={handleEditSave} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl shadow-md">保存して再開</button>
+        </div>
+      </div>
+    </div>
+  );
 
   if (!project) return <div className="p-8 text-center text-gray-500 font-bold">読み込み中...</div>;
 
@@ -163,8 +221,21 @@ export default function QuizPage() {
     const correctIds = Object.entries(firstAttemptResults).filter(([, isCorrect]) => isCorrect).map(([id]) => id);
     const initialCount = Object.keys(firstAttemptResults).length;
     
+    const hasMoreQuestions = project ? (
+      isReviewMode 
+        ? (project.wrongQuestionIds && project.wrongQuestionIds.length > 0)
+        : project.questions.some(q => !q.isMastered)
+    ) : false;
+
+    const handleNext10 = () => {
+      setFirstAttemptResults({});
+      setCurrentIndex(0);
+      setIsFinished(false);
+      setRefreshKey(k => k + 1);
+    };
+    
     return (
-      <div className="min-h-screen bg-orange-50 p-8 flex flex-col items-center pt-12 pb-20">
+      <div className="min-h-screen bg-orange-50 p-8 flex flex-col items-center pt-12 pb-32">
         <h1 className="text-4xl font-extrabold text-orange-500 mb-8 drop-shadow-sm">結果発表</h1>
         
         <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-lg mb-8 border border-orange-100 text-center">
@@ -181,29 +252,53 @@ export default function QuizPage() {
             const q = project?.questions.find(q => q.id === id);
             if (!q) return null;
             return (
-              <div key={id} className={`p-4 rounded-2xl shadow-sm flex justify-between items-center ${isCorrect ? 'bg-white border-l-8 border-green-500' : 'bg-red-50 border-l-8 border-red-500'}`}>
-                <div>
-                  <div className="font-bold text-xl text-gray-800 mb-1">
+              <div key={id} className={`p-4 rounded-2xl shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 ${isCorrect ? 'bg-white border-l-8 border-green-500' : 'bg-red-50 border-l-8 border-red-500'}`}>
+                <div className="flex-grow w-full">
+                  <div className="font-bold text-xl text-gray-800 mb-1 flex items-center flex-wrap gap-2">
                     {q.word} 
-                    {q.partOfSpeech && <span className="ml-2 bg-orange-100 text-orange-600 px-2 py-0.5 rounded-md text-xs font-bold align-middle">{q.partOfSpeech}</span>}
-                    <span className="text-gray-400 text-sm font-normal ml-2">/{q.phonetic}/</span>
+                    {q.partOfSpeech && <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-md text-xs font-bold">{q.partOfSpeech}</span>}
+                    <span className="text-gray-400 text-sm font-normal">/{q.phonetic}/</span>
                   </div>
                   <div className="text-gray-600 font-medium">{q.japanese}</div>
                 </div>
-                <div className="font-extrabold text-3xl">
-                  {isCorrect ? <span className="text-green-500">○</span> : <span className="text-red-500">×</span>}
+                <div className="flex items-center gap-4 w-full sm:w-auto justify-end">
+                  <button 
+                    onClick={() => startEdit(q)}
+                    className="text-gray-400 hover:text-orange-500 p-2 rounded-full hover:bg-orange-50 transition-colors bg-white/50"
+                    title="問題を修正"
+                  >
+                    ✏️
+                  </button>
+                  <div className="font-extrabold text-3xl">
+                    {isCorrect ? <span className="text-green-500">○</span> : <span className="text-red-500">×</span>}
+                  </div>
                 </div>
               </div>
             );
           })}
         </div>
         
-        <button 
-          onClick={() => router.push('/')}
-          className="mt-10 w-full max-w-lg bg-orange-500 hover:bg-orange-600 text-white font-extrabold py-5 text-xl rounded-2xl transition-transform hover:-translate-y-1 shadow-lg"
-        >
-          ホームに戻る
-        </button>
+        {/* スクロール不要の固定アクションバー */}
+        <div className="fixed bottom-0 left-0 w-full bg-white/95 backdrop-blur-sm border-t border-orange-100 p-4 sm:p-6 flex justify-center z-40 shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)]">
+          <div className="w-full max-w-lg flex gap-3">
+            <button 
+              onClick={() => router.push('/')}
+              className={`flex-1 ${hasMoreQuestions ? 'bg-gray-100 text-gray-600 hover:bg-gray-200 py-3' : 'bg-orange-500 text-white py-4'} font-bold rounded-xl transition-colors shadow-sm`}
+            >
+              ホーム
+            </button>
+            {hasMoreQuestions && (
+              <button 
+                onClick={handleNext10}
+                className="flex-[2] bg-green-500 hover:bg-green-600 text-white font-extrabold py-4 text-lg rounded-xl transition-transform hover:-translate-y-1 shadow-md shadow-green-200 flex items-center justify-center gap-2"
+              >
+                次の10問へ！ <span>🚀</span>
+              </button>
+            )}
+          </div>
+        </div>
+        
+        {editModal}
       </div>
     );
   }
@@ -255,27 +350,6 @@ export default function QuizPage() {
     }
   };
 
-  const startEdit = () => {
-    setEditForm({ ...currentQuestion });
-    setIsEditing(true);
-  };
-
-  const handleEditSave = () => {
-    if (project && editForm) {
-      const updatedQuestions = project.questions.map(q => q.id === editForm.id ? editForm : q);
-      project.questions = updatedQuestions;
-      saveProject(project);
-      
-      const updatedActive = activeQuestions.map(q => q.id === editForm.id ? editForm : q);
-      setActiveQuestions(updatedActive);
-      
-      const newChoices = generateQuizOptions(editForm, updatedQuestions, mode, 4);
-      setCurrentChoices(newChoices);
-      
-      setIsEditing(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-orange-50 p-4 flex flex-col items-center pt-8 relative">
       <div className="w-full max-w-md mb-8 flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-orange-100">
@@ -299,7 +373,7 @@ export default function QuizPage() {
         </button>
 
         <button 
-          onClick={startEdit}
+          onClick={() => startEdit(currentQuestion)}
           className="bg-gray-100 text-gray-500 hover:bg-gray-200 font-bold py-2 px-4 rounded-full shadow-sm transition-colors text-sm flex items-center gap-1"
         >
           <span>✏️ 問題を修正</span>
@@ -313,39 +387,7 @@ export default function QuizPage() {
         onAnswer={handleAnswer}
       />
 
-      {isEditing && editForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">問題データの修正</h2>
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-bold text-gray-600 mb-1">英単語</label>
-                <input type="text" value={editForm.word} onChange={e => setEditForm({...editForm, word: e.target.value})} className="w-full border p-2 rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-600 mb-1">日本語訳</label>
-                <input type="text" value={editForm.japanese} onChange={e => setEditForm({...editForm, japanese: e.target.value})} className="w-full border p-2 rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-600 mb-1">発音記号</label>
-                <input type="text" value={editForm.phonetic} onChange={e => setEditForm({...editForm, phonetic: e.target.value})} className="w-full border p-2 rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-600 mb-1">品詞・変形情報</label>
-                <input type="text" value={editForm.partOfSpeech || ''} onChange={e => setEditForm({...editForm, partOfSpeech: e.target.value})} className="w-full border p-2 rounded-lg" placeholder="例: 名詞, 動詞(過去形)など" />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-gray-600 mb-1">英文（穴埋め部分を_に）</label>
-                <textarea value={editForm.paragraph} onChange={e => setEditForm({...editForm, paragraph: e.target.value})} className="w-full border p-2 rounded-lg h-24" />
-              </div>
-            </div>
-            <div className="mt-6 flex gap-3">
-              <button onClick={() => setIsEditing(false)} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 rounded-xl">キャンセル</button>
-              <button onClick={handleEditSave} className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl shadow-md">保存して再開</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {editModal}
     </div>
   );
 }

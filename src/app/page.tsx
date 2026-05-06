@@ -32,7 +32,7 @@ export default function Home() {
         try {
           const content = event.target?.result as string;
           const questions = await parseCSV(content);
-          
+
           const newProject: Project = {
             id: `proj-${Date.now()}`,
             name: file.name.replace('.csv', ''),
@@ -40,7 +40,7 @@ export default function Home() {
             wrongQuestionIds: [],
             createdAt: Date.now()
           };
-          
+
           saveProject(newProject);
           setProjects(getProjects());
         } catch (error: any) {
@@ -51,7 +51,7 @@ export default function Home() {
     } else {
       alert('CSVまたはZIPファイルを選択してください。');
     }
-    
+
     e.target.value = '';
   };
 
@@ -69,7 +69,7 @@ export default function Home() {
         <h1 className="text-4xl font-extrabold text-orange-600 mb-8 text-center drop-shadow-sm">
           英単語アプリ AsuMe
         </h1>
-        
+
         <div className="bg-white rounded-3xl shadow-lg p-8 mb-8 text-center border border-orange-100 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-2 bg-orange-400"></div>
           <h2 className="text-2xl font-bold text-gray-700 mb-6">学習プロジェクトを追加・復元</h2>
@@ -95,52 +95,53 @@ export default function Home() {
               const totalAnswers = project.questions.reduce((sum, q) => sum + (q.correctCount || 0) + (q.incorrectCount || 0), 0);
               const totalCorrect = project.questions.reduce((sum, q) => sum + (q.correctCount || 0), 0);
               const accuracy = totalAnswers > 0 ? Math.round((totalCorrect / totalAnswers) * 100) : 0;
-              const cycles = project.questions.length > 0 
-                ? Math.min(...project.questions.map(q => (q.correctCount || 0) + (q.incorrectCount || 0))) 
+              const cycles = project.questions.length > 0
+                ? Math.min(...project.questions.map(q => (q.correctCount || 0) + (q.incorrectCount || 0)))
                 : 0;
               const masteredWords = project.questions.filter(q => q.isMastered).length;
 
               return (
-              <div key={project.id} className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md transition-shadow">
-                <div className="w-full sm:w-1/2">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="text-xl font-bold text-gray-800">{project.name}</h3>
-                    {cycles > 0 && <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-md text-xs font-bold">{cycles}周クリア</span>}
-                  </div>
-                  
-                  <div className="flex flex-wrap text-sm text-gray-500 gap-x-4 gap-y-1 mb-3 font-medium">
-                    <span>全 {project.questions.length} 問</span>
-                    <span>殿堂入り: {masteredWords} 問</span>
-                    <span>正答率: {accuracy}%</span>
-                  </div>
-                  
-                  <div className="w-full bg-gray-100 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: `${(studiedWords / project.questions.length) * 100}%` }}></div>
-                  </div>
-                  <p className="text-xs text-gray-400 mt-1">学習進捗: {studiedWords} / {project.questions.length}</p>
-                </div>
+                <div key={project.id} className="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:shadow-md transition-shadow">
+                  <div className="w-full sm:w-1/2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-xl font-bold text-gray-800">{project.name}</h3>
+                      {cycles > 0 && <span className="bg-orange-100 text-orange-600 px-2 py-0.5 rounded-md text-xs font-bold">{cycles}周クリア</span>}
+                    </div>
 
-                <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
-                  {project.wrongQuestionIds && project.wrongQuestionIds.length > 0 && (
-                    <Link href={`/quiz/${project.id}?review=true`} className="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-2 px-5 rounded-xl shadow-sm transition-transform hover:scale-105 flex items-center justify-center">
-                      復習 ({project.wrongQuestionIds.length}問)
+                    <div className="flex flex-wrap text-sm text-gray-500 gap-x-4 gap-y-1 mb-3 font-medium">
+                      <span>全 {project.questions.length} 問</span>
+                      <span>殿堂入り: {masteredWords} 問</span>
+                      <span>正答率: {accuracy}%</span>
+                    </div>
+
+                    <div className="w-full bg-gray-100 rounded-full h-2">
+                      <div className="bg-green-500 h-2 rounded-full" style={{ width: `${(studiedWords / project.questions.length) * 100}%` }}></div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">学習進捗: {studiedWords} / {project.questions.length}</p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">
+                    {project.wrongQuestionIds && project.wrongQuestionIds.length > 0 && (
+                      <Link href={`/quiz/${project.id}?review=true`} className="bg-yellow-400 hover:bg-yellow-500 text-white font-bold py-2 px-5 rounded-xl shadow-sm transition-transform hover:scale-105 flex items-center justify-center">
+                        復習 ({project.wrongQuestionIds.length}問)
+                      </Link>
+                    )}
+                    <Link href={`/quiz/${project.id}`} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-5 rounded-xl shadow-sm transition-transform hover:scale-105 flex items-center justify-center">
+                      学習開始
                     </Link>
-                  )}
-                  <Link href={`/quiz/${project.id}`} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-5 rounded-xl shadow-sm transition-transform hover:scale-105 flex items-center justify-center">
-                    学習開始
-                  </Link>
-                  <Link href={`/manage/${project.id}`} className="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-4 rounded-xl transition-colors">
-                    管理⚙️
-                  </Link>
-                  <button onClick={() => handleExport(project)} className="bg-blue-50 hover:bg-blue-100 text-blue-500 font-bold py-2 px-4 rounded-xl transition-colors">
-                    ZIP
-                  </button>
-                  <button onClick={() => { if(confirm('削除しますか？')) { deleteProject(project.id); setProjects(getProjects()); } }} className="bg-red-50 hover:bg-red-100 text-red-500 font-bold py-2 px-4 rounded-xl transition-colors">
-                    削除
-                  </button>
+                    <Link href={`/manage/${project.id}`} className="bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold py-2 px-4 rounded-xl transition-colors">
+                      管理⚙️
+                    </Link>
+                    <button onClick={() => handleExport(project)} className="bg-blue-50 hover:bg-blue-100 text-blue-500 font-bold py-2 px-4 rounded-xl transition-colors">
+                      ZIP
+                    </button>
+                    <button onClick={() => { if (confirm('削除しますか？')) { deleteProject(project.id); setProjects(getProjects()); } }} className="bg-red-50 hover:bg-red-100 text-red-500 font-bold py-2 px-4 rounded-xl transition-colors">
+                      削除
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )})
+              )
+            })
           )}
         </div>
       </div>

@@ -10,6 +10,7 @@ export default function GeneratorPage() {
   const router = useRouter();
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
   const [previewData, setPreviewData] = useState<QuestionData[] | null>(null);
 
@@ -19,26 +20,36 @@ export default function GeneratorPage() {
     if (words.length === 0) return;
 
     setIsLoading(true);
+    setProgress(0);
+    const newPreviewData: QuestionData[] = [];
+    setPreviewData([]); // Reset display
+
     try {
-      const res = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ words })
-      });
+      for (let i = 0; i < words.length; i++) {
+        const res = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ words: [words[i]] })
+        });
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || '自動生成に失敗しました');
+        const data = await res.json();
+        if (!res.ok) {
+          console.error(`Error generating ${words[i]}: ${data.error}`);
+          // エラーが起きても続行する
+        } else if (data.results && data.results.length > 0) {
+          const q = data.results[0];
+          newPreviewData.push({
+            ...q,
+            id: `q-gen-${Date.now()}-${i}`
+          });
+        }
+
+        // 進捗を更新し、プレビューにも途中経過を表示
+        setProgress(Math.round(((i + 1) / words.length) * 100));
+        setPreviewData([...newPreviewData]);
       }
-
-      const questionsWithIds = data.results.map((q: any, i: number) => ({
-        ...q,
-        id: `q-gen-${Date.now()}-${i}`
-      }));
-
-      setPreviewData(questionsWithIds);
     } catch (e: any) {
-      setError(e.message);
+      setError(e.message || '通信エラーが発生しました');
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +93,21 @@ export default function GeneratorPage() {
           >
             {isLoading ? <span className="animate-pulse">🔄 API連携中... しばらくお待ちください</span> : 'データを自動生成する'}
           </button>
+          
+          {isLoading && (
+            <div className="mt-6">
+              <div className="flex justify-between text-sm font-bold text-gray-600 mb-2">
+                <span>生成進捗</span>
+                <span>{progress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                <div 
+                  className="bg-blue-500 h-3 rounded-full transition-all duration-300" 
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
         </div>
 
         {previewData && (

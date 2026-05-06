@@ -16,6 +16,9 @@ export default function ManageProjectPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<QuestionData | null>(null);
 
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editNameValue, setEditNameValue] = useState('');
+
   useEffect(() => {
     if (projectId) {
       const p = getProject(projectId);
@@ -32,7 +35,7 @@ export default function ManageProjectPage() {
   };
 
   const resetMastered = (questionId: string) => {
-    const updatedQuestions = project.questions.map(q => 
+    const updatedQuestions = project.questions.map(q =>
       q.id === questionId ? { ...q, isMastered: false, consecutiveCorrectCount: 0 } : q
     );
     handleUpdate({ ...project, questions: updatedQuestions });
@@ -85,17 +88,60 @@ export default function ManageProjectPage() {
     <div className="min-h-screen bg-orange-50 p-8">
       <div className="max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-extrabold text-orange-600 drop-shadow-sm">
-            {project.name} の管理⚙️
-          </h1>
-          <Link href="/" className="text-gray-500 hover:text-gray-800 font-bold">ホームに戻る</Link>
+          {isEditingName ? (
+            <div className="flex items-center gap-2 w-full max-w-lg">
+              <input
+                type="text"
+                value={editNameValue}
+                onChange={e => setEditNameValue(e.target.value)}
+                className="text-3xl font-extrabold text-orange-600 border-b-2 border-orange-400 focus:outline-none bg-transparent w-full"
+                autoFocus
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && editNameValue.trim()) {
+                    handleUpdate({ ...project, name: editNameValue.trim() });
+                    setIsEditingName(false);
+                  } else if (e.key === 'Escape') {
+                    setIsEditingName(false);
+                  }
+                }}
+              />
+              <button
+                onClick={() => {
+                  if (editNameValue.trim()) {
+                    handleUpdate({ ...project, name: editNameValue.trim() });
+                    setIsEditingName(false);
+                  }
+                }}
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-xl font-bold shadow-sm whitespace-nowrap"
+              >
+                保存
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-extrabold text-orange-600 drop-shadow-sm">
+                {project.name} の管理⚙️
+              </h1>
+              <button
+                onClick={() => {
+                  setEditNameValue(project.name);
+                  setIsEditingName(true);
+                }}
+                className="text-gray-400 hover:text-orange-500 transition-colors p-2 text-xl"
+                title="名前を変更"
+              >
+                ✏️
+              </button>
+            </div>
+          )}
+          <Link href="/" className="text-gray-500 hover:text-gray-800 font-bold ml-4">ホームに戻る</Link>
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm p-6 mb-8 border border-orange-100 flex flex-col sm:flex-row gap-4 items-center">
           <div className="flex-grow w-full">
             <label className="block text-sm font-bold text-gray-600 mb-1">新しい単語を1つ追加</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={newWord}
               onChange={e => setNewWord(e.target.value)}
               placeholder="apple"
@@ -103,7 +149,7 @@ export default function ManageProjectPage() {
               onKeyDown={e => e.key === 'Enter' && generateAndAddWord()}
             />
           </div>
-          <button 
+          <button
             onClick={generateAndAddWord}
             disabled={isGenerating || !newWord.trim()}
             className="w-full sm:w-auto mt-4 sm:mt-5 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-xl shadow-md disabled:opacity-50 whitespace-nowrap transition-transform hover:-translate-y-1"
@@ -129,7 +175,7 @@ export default function ManageProjectPage() {
                 {project.questions.map(q => {
                   const total = (q.correctCount || 0) + (q.incorrectCount || 0);
                   const rate = total > 0 ? Math.round(((q.correctCount || 0) / total) * 100) : 0;
-                  
+
                   return (
                     <tr key={q.id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${q.isMastered ? 'bg-orange-50/50' : ''}`}>
                       <td className="p-4 text-center">
@@ -187,23 +233,23 @@ export default function ManageProjectPage() {
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-bold text-gray-600 mb-1">英単語</label>
-                <input type="text" value={editingQuestion.word} onChange={e => setEditingQuestion({...editingQuestion, word: e.target.value})} className="w-full border p-2 rounded-lg" />
+                <input type="text" value={editingQuestion.word} onChange={e => setEditingQuestion({ ...editingQuestion, word: e.target.value })} className="w-full border p-2 rounded-lg" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-600 mb-1">日本語訳</label>
-                <input type="text" value={editingQuestion.japanese} onChange={e => setEditingQuestion({...editingQuestion, japanese: e.target.value})} className="w-full border p-2 rounded-lg" />
+                <input type="text" value={editingQuestion.japanese} onChange={e => setEditingQuestion({ ...editingQuestion, japanese: e.target.value })} className="w-full border p-2 rounded-lg" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-600 mb-1">発音記号</label>
-                <input type="text" value={editingQuestion.phonetic} onChange={e => setEditingQuestion({...editingQuestion, phonetic: e.target.value})} className="w-full border p-2 rounded-lg" />
+                <input type="text" value={editingQuestion.phonetic} onChange={e => setEditingQuestion({ ...editingQuestion, phonetic: e.target.value })} className="w-full border p-2 rounded-lg" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-600 mb-1">品詞</label>
-                <input type="text" value={editingQuestion.partOfSpeech || ''} onChange={e => setEditingQuestion({...editingQuestion, partOfSpeech: e.target.value})} className="w-full border p-2 rounded-lg" />
+                <input type="text" value={editingQuestion.partOfSpeech || ''} onChange={e => setEditingQuestion({ ...editingQuestion, partOfSpeech: e.target.value })} className="w-full border p-2 rounded-lg" />
               </div>
               <div>
                 <label className="block text-sm font-bold text-gray-600 mb-1">英文（穴埋め部分は _）</label>
-                <textarea value={editingQuestion.paragraph} onChange={e => setEditingQuestion({...editingQuestion, paragraph: e.target.value})} className="w-full border p-2 rounded-lg h-24" />
+                <textarea value={editingQuestion.paragraph} onChange={e => setEditingQuestion({ ...editingQuestion, paragraph: e.target.value })} className="w-full border p-2 rounded-lg h-24" />
               </div>
             </div>
             <div className="mt-6 flex gap-3">
