@@ -62,6 +62,7 @@ export default function ManageProjectPage() {
         body: JSON.stringify({ words: [newWord.trim()] })
       });
       const data = await res.json();
+      if (res.status === 429) throw new Error(data.message || '本日のAPI利用上限に達しました。明日またお試しください。');
       if (!res.ok) throw new Error(data.error || '自動生成に失敗しました');
 
       if (data.results && data.results.length > 0) {
@@ -125,6 +126,7 @@ export default function ManageProjectPage() {
         })
       });
       const data = await res.json();
+      if (res.status === 429) throw new Error(data.message || '本日のAPI利用上限に達しました。明日またお試しください。');
       if (!res.ok) throw new Error(data.error || '自動生成に失敗しました');
 
       setEditingQuestion({
@@ -167,6 +169,7 @@ export default function ManageProjectPage() {
             body: JSON.stringify({ words: [q.word] })
           });
           const data = await res.json();
+          if (res.status === 429) throw new Error(data.message || '本日のAPI利用上限に達しました。明日またお試しください。');
           if (res.ok && data.results && data.results.length > 0) {
             updatedQuestions[index] = { ...updatedQuestions[index], ...data.results[0] };
           }
@@ -177,6 +180,7 @@ export default function ManageProjectPage() {
             body: JSON.stringify({ word: q.word, japanese: q.japanese, partOfSpeech: q.partOfSpeech })
           });
           const data = await res.json();
+          if (res.status === 429) throw new Error(data.message || '本日のAPI利用上限に達しました。明日またお試しください。');
           if (res.ok) {
             updatedQuestions[index] = { 
               ...updatedQuestions[index], 
@@ -191,8 +195,12 @@ export default function ManageProjectPage() {
       }
       setProject({ ...project, questions: updatedQuestions });
       alert('一括補完が完了しました！');
-    } catch {
-      alert('通信中にエラーが発生しました。処理を中断します。');
+    } catch (e: unknown) {
+      if (e instanceof Error) {
+        alert(e.message || '通信中にエラーが発生しました。処理を中断します。');
+      } else {
+        alert('通信中にエラーが発生しました。処理を中断します。');
+      }
     } finally {
       setIsBatchEnriching(false);
       setBatchProgress(0);

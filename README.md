@@ -26,6 +26,7 @@
   * `jszip` (ZIPファイルの圧縮・展開)
   * `cmu-pronouncing-dictionary` (発音記号フォールバック)
 * **利用API**: RapidAPI (WordsAPI), DeepL API, OpenAI API
+* **インフラ/DB**: Upstash Redis (APIレート制限用)
 
 ## 🛠️ セットアップと実行方法
 
@@ -40,6 +41,12 @@
    WORDS_API_KEY="your_wordsapi_key"
    DEEPL_API_KEY="your_deepl_api_key"
    OPENAI_API_KEY="your_openai_api_key"
+
+   # 以下はAPIの使いすぎを防止するためのRate Limit用設定（Vercel等の公開環境で必須）
+   UPSTASH_REDIS_REST_URL="your_upstash_redis_rest_url"
+   UPSTASH_REDIS_REST_TOKEN="your_upstash_redis_rest_token"
+   DAILY_GLOBAL_LIMIT="2450"
+   DAILY_IP_LIMIT="200"
    ```
 
 3. **開発サーバーの起動**

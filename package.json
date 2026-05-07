@@ -10,6 +10,8 @@
     "test": "jest"
   },
   "dependencies": {
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "cmu-pronouncing-dictionary": "^3.0.0",
     "jszip": "^3.10.1",
     "next": "16.2.4",

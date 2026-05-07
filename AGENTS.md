@@ -44,5 +44,6 @@ This version has breaking changes — APIs, conventions, and file structure may 
   - `CMU Pronouncing Dictionary`: 発音記号の取得（WordsAPIで取得できなかった場合のフォールバック）。
   - `OpenAI API (gpt-4o-mini)`: 意味の選定、日本語訳、例文の生成（JSONモードで一括処理）。
   - `翻訳API (DeepL)`: OpenAIのAPIキー未設定、または生成失敗時のフォールバック。
+  - `@upstash/redis` & `@upstash/ratelimit`: Next.jsのMiddleware内で使用し、従量課金API（WordsAPIなど）へのリクエスト回数を厳格に制限（グローバル上限2450回/日）し、過剰請求を防ぐ。
 - **特記事項**: 例文内の対象単語を自動で `_` に置換するロジックを組み込むこと。
 <!-- END:project-rules -->

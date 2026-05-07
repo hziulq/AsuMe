@@ -33,6 +33,10 @@ export default function GeneratorPage() {
         });
 
         const data = await res.json();
+        if (res.status === 429) {
+          throw new Error(data.message || '本日のAPI利用上限に達しました。明日またお試しください。');
+        }
+        
         if (!res.ok) {
           console.error(`Error generating ${words[i]}: ${data.error}`);
           // エラーが起きても続行する
