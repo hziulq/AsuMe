@@ -36,7 +36,7 @@ export default function GeneratorPage() {
         if (res.status === 429) {
           throw new Error(data.message || '本日のAPI利用上限に達しました。明日またお試しください。');
         }
-        
+
         if (!res.ok) {
           console.error(`Error generating ${words[i]}: ${data.error}`);
           // エラーが起きても続行する
@@ -84,14 +84,14 @@ export default function GeneratorPage() {
           <h1 className="text-3xl font-extrabold text-orange-600 drop-shadow-sm">単語データ自動生成 ✨</h1>
           <Link href="/" className="text-gray-500 hover:text-gray-800 font-bold">ホームに戻る</Link>
         </div>
-        
+
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8 border border-orange-100">
           <p className="text-gray-600 mb-4 font-bold">追加したい英単語を改行区切りで入力してください。</p>
           <textarea
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             className="w-full h-48 border-2 border-gray-200 rounded-xl p-4 focus:border-orange-500 outline-none mb-4 font-mono"
-            placeholder="apple&#10;banana&#10;ambiguity"
+            placeholder={"apple\nbanana\nambiguity"}
           />
           {error && <p className="text-red-500 font-bold mb-4">{error}</p>}
           <button
@@ -101,7 +101,7 @@ export default function GeneratorPage() {
           >
             {isLoading ? <span className="animate-pulse">🔄 API連携中... しばらくお待ちください</span> : 'データを自動生成する'}
           </button>
-          
+
           {isLoading && (
             <div className="mt-6">
               <div className="flex justify-between text-sm font-bold text-gray-600 mb-2">
@@ -109,8 +109,8 @@ export default function GeneratorPage() {
                 <span>{progress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                <div 
-                  className="bg-blue-500 h-3 rounded-full transition-all duration-300" 
+                <div
+                  className="bg-blue-500 h-3 rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 ></div>
               </div>
@@ -122,14 +122,14 @@ export default function GeneratorPage() {
           <div className="bg-white rounded-2xl shadow-lg p-6 border border-orange-100">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-800">プレビュー</h2>
-              <button 
+              <button
                 onClick={handleSave}
                 className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-transform hover:scale-105"
               >
                 プロジェクトとして保存
               </button>
             </div>
-            
+
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[600px]">
                 <thead>

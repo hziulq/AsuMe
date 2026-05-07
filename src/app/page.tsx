@@ -157,6 +157,48 @@ export default function Home() {
             })
           )}
         </div>
+
+        {/* --- アプリの使い方ガイド --- */}
+        <div className="mt-16 bg-white rounded-3xl shadow-sm p-8 border border-orange-100">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+            <span>💡</span> アプリの簡単な使い方
+          </h2>
+          
+          <div className="space-y-6 text-gray-700">
+            <div className="flex gap-4 items-start">
+              <div className="bg-orange-100 text-orange-600 font-bold rounded-full w-8 h-8 flex items-center justify-center shrink-0">1</div>
+              <div>
+                <h3 className="font-bold text-lg mb-1">英単語だけを入力して自動生成！</h3>
+                <p className="text-sm leading-relaxed">
+                  「<span className="font-bold text-blue-500">✨ 英単語から自動生成</span>」ボタンを押し、覚えたい英単語を改行区切りで入力するだけ。<br/>
+                  自動で品詞や発音記号、日本語訳が生成されます。最大の強みは、**TOEIC（ビジネス・旅行・フォーマル等）を意識した実践的な穴埋め例文**が<span className="font-bold text-orange-500">無料</span>で作れる点です！
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 items-start">
+              <div className="bg-orange-100 text-orange-600 font-bold rounded-full w-8 h-8 flex items-center justify-center shrink-0">2</div>
+              <div>
+                <h3 className="font-bold text-lg mb-1">サクサク学習＆ネイティブ音声</h3>
+                <p className="text-sm leading-relaxed">
+                  「<span className="font-bold text-green-500">学習開始</span>」ボタンからクイズをスタート！<br/>
+                  自動生成された自然な音声が再生されます。間違えた問題は後からまとめて復習でき、3回連続で正解すると「殿堂入り👑」となり出題されなくなります。
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 items-start">
+              <div className="bg-orange-100 text-orange-600 font-bold rounded-full w-8 h-8 flex items-center justify-center shrink-0">3</div>
+              <div>
+                <h3 className="font-bold text-lg mb-1">既存のデータから取り込む・補完する</h3>
+                <p className="text-sm leading-relaxed">
+                  お手持ちのExcelやCSVファイルから一括で単語帳を作成することも可能。<br/>
+                  もし日本語訳や例文が不足している単語があっても、管理画面の「**一括補完（Batch Enrich）**」機能で、後からボタン1つで全自動補完できます。
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {exportingProject && (
