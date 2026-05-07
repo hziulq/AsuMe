@@ -317,18 +317,26 @@ export default function ManageProjectPage() {
                 {project.questions.map(q => {
                   const total = (q.correctCount || 0) + (q.incorrectCount || 0);
                   const rate = total > 0 ? Math.round(((q.correctCount || 0) / total) * 100) : 0;
+                  const isMissingData = !q.japanese || !q.paragraph || !q.phonetic;
 
                   return (
-                    <tr key={q.id} className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${q.isMastered ? 'bg-orange-50/50' : ''}`}>
+                    <tr key={q.id} className={`border-b border-gray-100 transition-colors ${q.isMastered ? 'bg-orange-50/50 hover:bg-orange-100/50' : (isMissingData ? 'bg-red-50 hover:bg-red-100/50' : 'hover:bg-gray-50')}`}>
                       <td className="p-4 text-center">
                         {q.isMastered ? <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-md shadow-sm">殿堂入り</span> : <span className="text-gray-400 text-xs">学習中</span>}
                       </td>
                       <td className="p-4 font-bold text-lg text-gray-800">
                         {q.word}
-                        <div className="text-xs text-gray-400 font-normal mt-1">{q.phonetic} {q.partOfSpeech && `• ${q.partOfSpeech}`}</div>
-                        <div className="text-xs text-gray-500 font-normal mt-1 line-clamp-1">{q.paragraph.replace(/_\[活用形:.*?\]/g, '_[活用形]')}</div>
+                        <div className="text-xs text-gray-400 font-normal mt-1">
+                          {q.phonetic ? q.phonetic : <span className="text-red-400">(発音記号なし)</span>}
+                          {q.partOfSpeech && ` • ${q.partOfSpeech}`}
+                        </div>
+                        <div className="text-xs text-gray-500 font-normal mt-1 line-clamp-1">
+                          {q.paragraph ? q.paragraph.replace(/_\[活用形:.*?\]/g, '_[活用形]') : <span className="text-red-400">(例文なし)</span>}
+                        </div>
                       </td>
-                      <td className="p-4 text-gray-700">{q.japanese}</td>
+                      <td className="p-4 text-gray-700">
+                        {q.japanese ? q.japanese : <span className="text-red-500 font-bold">(日本語訳なし)</span>}
+                      </td>
                       <td className="p-4 text-center">
                         <div className="font-bold text-gray-700">
                           <span className="text-green-500">{q.correctCount || 0}</span> / <span className="text-red-500">{q.incorrectCount || 0}</span>
