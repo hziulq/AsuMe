@@ -164,9 +164,9 @@ export default function Home() {
           <div className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl">
             <h2 className="text-xl font-bold text-gray-800 mb-4">エクスポート形式の選択</h2>
             <p className="text-sm text-gray-600 mb-6">{exportingProject.name} を出力します。</p>
-            
+
             <div className="space-y-3">
-              <button 
+              <button
                 onClick={() => {
                   handleExportZip(exportingProject);
                   setExportingProject(null);
@@ -176,8 +176,8 @@ export default function Home() {
                 <span className="text-lg">プロジェクトデータ (ZIP)</span>
                 <span className="text-xs font-normal opacity-90 mt-1">学習履歴や成績を含む完全なバックアップ</span>
               </button>
-              
-              <button 
+
+              <button
                 onClick={() => {
                   exportProjectToCSV(exportingProject);
                   setExportingProject(null);
@@ -188,9 +188,9 @@ export default function Home() {
                 <span className="text-xs font-normal opacity-90 mt-1">Excel等で編集できる単語リストのみ</span>
               </button>
             </div>
-            
-            <button 
-              onClick={() => setExportingProject(null)} 
+
+            <button
+              onClick={() => setExportingProject(null)}
               className="w-full mt-6 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 rounded-xl transition-colors"
             >
               キャンセル

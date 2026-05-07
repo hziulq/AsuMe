@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-// @ts-expect-error cmu-pronouncing-dictionary has no types
 import { dictionary as cmudict } from 'cmu-pronouncing-dictionary';
 
 export async function POST(request: Request) {
@@ -79,7 +78,7 @@ Output a JSON object with exactly one key "example" containing the sentence.`;
         const resultObj = JSON.parse(openaiData.choices[0].message.content);
         if (resultObj.example) {
           const rawExample = resultObj.example.trim().replace(/^["']|["']$/g, '');
-          
+
           // Apply blank replacement logic
           let regex = new RegExp(`\\b${cleanWord}\\b`, 'gi');
           paragraph = rawExample.replace(regex, '_');
@@ -94,7 +93,7 @@ Output a JSON object with exactly one key "example" containing the sentence.`;
             const prefix = cleanWord.slice(0, prefixLength);
             const wordsInExample = rawExample.match(/\b[a-zA-Z]+\b/g) || [];
 
-            const targetMatch = wordsInExample.find(w =>
+            const targetMatch = wordsInExample.find((w: string) =>
               w.toLowerCase().startsWith(prefix) &&
               Math.abs(w.length - cleanWord.length) <= 4
             );
@@ -117,8 +116,8 @@ Output a JSON object with exactly one key "example" containing the sentence.`;
     // 3. Determine Final Phonetic
     if (pronunciationObj) {
       // Find matching part of speech
-      const posMatch = partOfSpeech ? Object.keys(pronunciationObj).find(k => 
-        partOfSpeech.toLowerCase().includes(k.toLowerCase()) || 
+      const posMatch = partOfSpeech ? Object.keys(pronunciationObj).find(k =>
+        partOfSpeech.toLowerCase().includes(k.toLowerCase()) ||
         k.toLowerCase().includes(partOfSpeech.toLowerCase())
       ) : null;
 

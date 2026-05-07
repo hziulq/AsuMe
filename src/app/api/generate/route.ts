@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-// @ts-expect-error cmu-pronouncing-dictionary has no types
 import { dictionary as cmudict } from 'cmu-pronouncing-dictionary';
 
 export async function POST(request: Request) {
