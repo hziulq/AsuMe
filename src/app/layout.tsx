@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
   title: "英単語アプリ AsuMe",
   description: "自分だけの単語帳を作って、効率的に英語を学習できるアプリ",
   openGraph: {
