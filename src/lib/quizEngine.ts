@@ -16,6 +16,30 @@ export function shuffle<T>(array: T[]): T[] {
   return newArray;
 }
 
+export function selectFairQuestionSet(
+  questions: QuestionData[],
+  numQuestions: number = 10,
+): QuestionData[] {
+  const scored = questions.map((q) => ({
+    q,
+    attemptCount: (q.correctCount || 0) + (q.incorrectCount || 0),
+    lastStudiedAt: q.lastStudiedAt ?? 0,
+    randomWeight: Math.random(),
+  }));
+
+  scored.sort((a, b) => {
+    if (a.attemptCount !== b.attemptCount) {
+      return a.attemptCount - b.attemptCount;
+    }
+    if (a.lastStudiedAt !== b.lastStudiedAt) {
+      return a.lastStudiedAt - b.lastStudiedAt;
+    }
+    return a.randomWeight - b.randomWeight;
+  });
+
+  return scored.slice(0, numQuestions).map(({ q }) => q);
+}
+
 export function generateQuizOptions(
   correctQuestion: QuestionData,
   allQuestions: QuestionData[],

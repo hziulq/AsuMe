@@ -104,13 +104,18 @@ export default function Home() {
             <p className="text-gray-500 ml-2">プロジェクトがありません。</p>
           ) : (
             projects.map(project => {
-              const studiedWords = project.questions.filter(q => q.correctCount || q.incorrectCount).length;
               const totalAnswers = project.questions.reduce((sum, q) => sum + (q.correctCount || 0) + (q.incorrectCount || 0), 0);
               const totalCorrect = project.questions.reduce((sum, q) => sum + (q.correctCount || 0), 0);
               const accuracy = totalAnswers > 0 ? Math.round((totalCorrect / totalAnswers) * 100) : 0;
               const cycles = project.questions.length > 0
                 ? Math.min(...project.questions.map(q => (q.correctCount || 0) + (q.incorrectCount || 0)))
                 : 0;
+              const currentCycleNumber = project.questions.length > 0 ? cycles + 1 : 0;
+              const currentCycleAnsweredCount = project.questions.filter(q => ((q.correctCount || 0) + (q.incorrectCount || 0)) > cycles).length;
+              const currentCycleProgressRate = project.questions.length > 0
+                ? currentCycleAnsweredCount / project.questions.length
+                : 0;
+              const progressBarClass = currentCycleNumber % 2 === 0 ? 'bg-blue-500' : 'bg-green-500';
               const masteredWords = project.questions.filter(q => q.isMastered).length;
 
               return (
@@ -128,9 +133,11 @@ export default function Home() {
                     </div>
 
                     <div className="w-full bg-gray-100 rounded-full h-2">
-                      <div className="bg-green-500 h-2 rounded-full" style={{ width: `${(studiedWords / project.questions.length) * 100}%` }}></div>
+                      <div className={`${progressBarClass} h-2 rounded-full`} style={{ width: `${currentCycleProgressRate * 100}%` }}></div>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1">学習進捗: {studiedWords} / {project.questions.length}</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      現在の周: {currentCycleNumber} ({currentCycleAnsweredCount}/{project.questions.length}) ・ 累計回答: {totalAnswers}/{project.questions.length}
+                    </p>
                   </div>
 
                   <div className="flex flex-wrap gap-2 w-full sm:w-auto justify-end">

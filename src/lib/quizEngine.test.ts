@@ -1,4 +1,4 @@
-import { generateQuizOptions } from './quizEngine';
+import { generateQuizOptions, selectFairQuestionSet } from './quizEngine';
 import { QuestionData } from '@/types';
 
 describe('Quiz Engine', () => {
@@ -38,5 +38,27 @@ describe('Quiz Engine', () => {
     
     // Only 2 total choices are possible
     expect(choices).toHaveLength(2);
+  });
+
+  it('prioritizes unanswered questions first in a fair question set', () => {
+    const sampleQuestions: QuestionData[] = [
+      { id: '1', word: 'apple', japanese: 'りんご', paragraph: 'I eat an _.', phonetic: 'æpl', correctCount: 1, incorrectCount: 0, lastStudiedAt: Date.now() - 100000 },
+      { id: '2', word: 'banana', japanese: 'ばなな', paragraph: 'A yellow _.', phonetic: 'bəˈnænə' },
+      { id: '3', word: 'cherry', japanese: 'さくらんぼ', paragraph: 'A red _.', phonetic: 'ˈtʃeri' },
+    ];
+
+    const selected = selectFairQuestionSet(sampleQuestions, 2);
+    expect(selected.map((q) => q.id).sort()).toEqual(['2', '3']);
+  });
+
+  it('prefers questions with fewer total attempts when selecting a fair set', () => {
+    const sampleQuestions: QuestionData[] = [
+      { id: '1', word: 'apple', japanese: 'りんご', paragraph: 'I eat an _.', phonetic: 'æpl', correctCount: 2, incorrectCount: 0, lastStudiedAt: Date.now() - 200000 },
+      { id: '2', word: 'banana', japanese: 'ばなな', paragraph: 'A yellow _.', phonetic: 'bəˈnænə', correctCount: 1, incorrectCount: 0, lastStudiedAt: Date.now() - 100000 },
+      { id: '3', word: 'cherry', japanese: 'さくらんぼ', paragraph: 'A red _.', phonetic: 'ˈtʃeri', correctCount: 1, incorrectCount: 0, lastStudiedAt: Date.now() - 50000 },
+    ];
+
+    const selected = selectFairQuestionSet(sampleQuestions, 2);
+    expect(selected.map((q) => q.id).sort()).toEqual(['2', '3']);
   });
 });

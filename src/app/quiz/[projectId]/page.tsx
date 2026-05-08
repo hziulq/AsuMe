@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { getProject, saveProject } from '@/lib/projectManager';
 import { Project, QuestionType, QuestionData } from '@/types';
 import { QuizCard } from '@/components/QuizCard';
-import { generateQuizOptions, shuffle } from '@/lib/quizEngine';
+import { generateQuizOptions, shuffle, selectFairQuestionSet } from '@/lib/quizEngine';
 import { playAudio } from '@/lib/audio';
 
 const getAudioText = (q: QuestionData) => {
@@ -53,24 +53,7 @@ export default function QuizPage() {
         } else if (!isReviewMode) {
           const activePool = p.questions.filter(q => !q.isMastered);
           if (activePool.length > 0) {
-            const scoredPool = activePool.map(q => {
-              let score = 0;
-              if (!q.lastStudiedAt) {
-                score += 1000;
-              } else {
-                const total = (q.correctCount || 0) + (q.incorrectCount || 0);
-                const correctRate = total === 0 ? 0 : (q.correctCount || 0) / total;
-                score += (1 - correctRate) * 100;
-                
-                const daysSince = (Date.now() - q.lastStudiedAt) / (1000 * 60 * 60 * 24);
-                score += Math.min(daysSince * 10, 200);
-              }
-              score += Math.random() * 40 - 20;
-              return { q, score };
-            });
-            
-            scoredPool.sort((a, b) => b.score - a.score);
-            selectedQuestions = scoredPool.slice(0, 10).map(item => item.q);
+            selectedQuestions = selectFairQuestionSet(activePool, 10);
           }
         }
         setActiveQuestions(selectedQuestions);
