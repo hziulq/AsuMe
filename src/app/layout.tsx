@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")),
   title: "英単語アプリ AsuMe",
   description: "自分だけの単語帳を作って、効率的に英語を学習できるアプリ",
   openGraph: {
@@ -22,11 +22,20 @@ export const metadata: Metadata = {
     siteName: "AsuMe",
     locale: "ja_JP",
     type: "website",
+    images: [
+      {
+        url: "/ogp-image.png",
+        width: 1200,
+        height: 630,
+        alt: "英単語アプリ AsuMe",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "英単語アプリ AsuMe",
     description: "英単語を入力するだけで、TOEICに特化した実践的な例文やネイティブ音声を自動生成！自分だけの単語帳を作って効率的に学習できるブラウザ完結型アプリ。",
+    images: ["/ogp-image.png"],
   },
 };
 
