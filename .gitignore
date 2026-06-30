@@ -43,3 +43,12 @@ next-env.d.ts
 
 # mymikan
 subject/
+
+# Claude Code (per-user local settings — keep shared .claude/skills, .specify, .agents tracked)
+.claude/settings.local.json
+
+# OS / editor noise
+Thumbs.db
+*.swp
+*.swo
+.idea/

@@ -22,3 +22,24 @@ export interface Project {
   createdAt: number;
   lastStudiedAt?: number;
 }
+
+// --- ゲーミフィケーション（一時状態・永続スキーマには含めない） ---
+
+// 1問の初回提示時の結果。実効成功 = isCorrect && !timedOut
+export interface AttemptResult {
+  isCorrect: boolean;
+  timedOut: boolean;
+}
+
+// 1セット完了時のサマリ（firstAttemptResults から派生）
+export interface SetSummary {
+  total: number;
+  correctCount: number;
+  isPerfect: boolean;
+}
+
+// タイム制限モードのUI設定（学習データとは別キーに保存）
+export interface QuizPrefs {
+  timedMode: boolean;
+  questionSeconds: number;
+}
