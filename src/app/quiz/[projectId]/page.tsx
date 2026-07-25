@@ -273,7 +273,7 @@ export default function QuizPage() {
                   onChange={(e) => setQuestionSeconds(Number(e.target.value))}
                   className="border border-orange-200 rounded-lg px-3 py-1 font-bold text-gray-700 bg-white"
                 >
-                  {[10, 15, 20, 30].map((s) => (
+                  {[2, 5, 10, 15, 20, 30].map((s) => (
                     <option key={s} value={s}>{s} 秒</option>
                   ))}
                 </select>
